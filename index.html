@@ -47,17 +47,17 @@
   .intro.fade{opacity:0;}
   .meteor{
     --ang:35deg;
-    position:absolute; top:0; left:-10vw; height:3px; border-radius:99px;
-    background:linear-gradient(90deg,#fff 0%, #ffe6b0 22%, #ff9a5c 48%, #ff5e3a 70%, transparent 100%);
+    position:absolute; top:0; left:-10vw; height:2px; border-radius:99px;
+    background:linear-gradient(90deg,#fff 0%, #e8f1ff 35%, rgba(160,195,255,.45) 70%, transparent 100%);
     transform:rotate(var(--ang));
     animation:shoot 1.2s ease-out forwards;
     opacity:0;
   }
   .meteor::before{
-    content:''; position:absolute; left:-4px; top:50%; transform:translateY(-50%);
-    width:9px; height:9px; border-radius:50%;
-    background:radial-gradient(circle,#fff 30%, #ffd9a0 60%, rgba(255,140,60,.5) 100%);
-    box-shadow:0 0 14px 5px rgba(255,180,90,.75), 0 0 34px 14px rgba(255,120,50,.35);
+    content:''; position:absolute; left:-3px; top:50%; transform:translateY(-50%);
+    width:6px; height:6px; border-radius:50%;
+    background:radial-gradient(circle,#fff 40%, #dce8ff 70%, rgba(180,210,255,.4) 100%);
+    box-shadow:0 0 8px 3px rgba(200,220,255,.7);
   }
   @keyframes shoot{
     0%{transform:rotate(var(--ang)) translateX(0); opacity:0;}
@@ -338,8 +338,8 @@ function meteorShower(){
     const m = document.createElement('div');
     m.className = 'meteor';
     const top = (Math.random()*55).toFixed(1);
-    const delay = (Math.random()*3.4).toFixed(2);
-    const dur = (Math.random()*0.9+0.9).toFixed(2);
+    const delay = (Math.random()*3.0).toFixed(2);
+    const dur = (Math.random()*1.1+1.5).toFixed(2); // 1.5-2.6s 速度放慢
     const ang = (Math.random()*16+28).toFixed(1);
     const w = (Math.random()*100+130).toFixed(0);
     m.style.top = top + 'vh';
@@ -353,7 +353,7 @@ function meteorShower(){
     intro.classList.add('fade');
     document.body.classList.add('ready');
     setTimeout(()=>{ intro.style.display = 'none'; }, 1200);
-  }, 4400);
+  }, 5000);
 }
 
 openBtn.addEventListener('click', startOpen);
