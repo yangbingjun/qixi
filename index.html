@@ -39,30 +39,9 @@
     8%{opacity:.8}
     100%{transform:translateY(112vh) rotate(340deg); opacity:0}
   }
-  /* ---------- 开场流星雨 ---------- */
-  .intro{
-    position:fixed; inset:0; z-index:7; pointer-events:none; overflow:hidden;
-    opacity:1; transition:opacity 1.1s ease;
-  }
-  .intro.fade{opacity:0;}
-  .meteor{
-    --ang:35deg;
-    position:absolute; top:0; left:-10vw; height:2px; border-radius:99px;
-    background:linear-gradient(90deg,#fff 0%, #e8f1ff 35%, rgba(160,195,255,.45) 70%, transparent 100%);
-    transform:rotate(var(--ang));
-    animation:shoot 1.2s ease-out forwards;
-    opacity:0;
-  }
-  .meteor::before{
-    content:''; position:absolute; left:-3px; top:50%; transform:translateY(-50%);
-    width:6px; height:6px; border-radius:50%;
-    background:radial-gradient(circle,#fff 40%, #dce8ff 70%, rgba(180,210,255,.4) 100%);
-    box-shadow:0 0 8px 3px rgba(200,220,255,.7);
-  }
-  @keyframes shoot{
-    0%{transform:rotate(var(--ang)) translateX(0); opacity:0;}
-    10%{opacity:1;}
-    100%{transform:rotate(var(--ang)) translateX(135vw); opacity:0;}
+  /* ---------- 开场流星雨（canvas） ---------- */
+  #meteorCanvas{
+    position:fixed; inset:0; z-index:7; pointer-events:none;
   }
   /* 主内容开场淡入 */
   .title, .stage{opacity:0; transition:opacity 1.3s ease;}
@@ -231,7 +210,7 @@
 </head>
 <body>
 <div class="sky" id="sky"></div>
-<div class="intro" id="intro"></div>
+<canvas id="meteorCanvas"></canvas>
 
 <div class="title">七 夕</div>
 
@@ -330,30 +309,82 @@ function reset(){
   placePhoto();
 }
 
-/* ---------- 开场流星雨 ---------- */
+/* ---------- 开场流星雨（canvas 绘制） ---------- */
 function meteorShower(){
-  const intro = document.getElementById('intro');
-  const total = 16;
-  for(let i=0;i<total;i++){
-    const m = document.createElement('div');
-    m.className = 'meteor';
-    const top = (Math.random()*55).toFixed(1);
-    const delay = (Math.random()*3.0).toFixed(2);
-    const dur = (Math.random()*1.1+1.5).toFixed(2); // 1.5-2.6s 速度放慢
-    const ang = (Math.random()*16+28).toFixed(1);
-    const w = (Math.random()*100+130).toFixed(0);
-    m.style.top = top + 'vh';
-    m.style.width = w + 'px';
-    m.style.setProperty('--ang', ang + 'deg');
-    m.style.animationDelay = delay + 's';
-    m.style.animationDuration = dur + 's';
-    intro.appendChild(m);
+  const canvas = document.getElementById('meteorCanvas');
+  const ctx = canvas.getContext('2d');
+  function resize(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
   }
-  setTimeout(()=>{
-    intro.classList.add('fade');
-    document.body.classList.add('ready');
-    setTimeout(()=>{ intro.style.display = 'none'; }, 1200);
-  }, 5000);
+  resize();
+  window.addEventListener('resize', resize);
+
+  const TOTAL = 18;
+  const DURATION = 5200;
+  const start = performance.now();
+  const meteors = [];
+  for(let i=0;i<TOTAL;i++){
+    meteors.push({
+      x: Math.random()*canvas.width*0.75,
+      y: Math.random()*canvas.height*0.42,
+      angle: Math.random()*0.22+0.55,  // 30°-44° 斜角
+      speed: Math.random()*240+260,    // px/s 速度（偏慢）
+      len: Math.random()*110+90,       // 尾巴长度
+      width: Math.random()*1.5+1.3,    // 流星粗细
+      delay: Math.random()*3000,       // 延迟出现 ms
+      alpha: Math.random()*0.4+0.55
+    });
+  }
+
+  function frame(t){
+    const elapsed = t - start;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let active = 0;
+    for(const m of meteors){
+      if(elapsed < m.delay) continue;
+      const t0 = (elapsed - m.delay)/1000;
+      const dist = t0 * m.speed;
+      const x = m.x + Math.cos(m.angle)*dist;
+      const y = m.y + Math.sin(m.angle)*dist;
+      if(x < -300 || y < -300 || x > canvas.width+300 || y > canvas.height+300) continue;
+      active++;
+      // 锥形渐变尾巴（5 段，宽度/透明度递减）
+      const segs = 5;
+      for(let s=0;s<segs;s++){
+        const f0 = s/segs, f1 = (s+1)/segs;
+        const x0 = x - Math.cos(m.angle)*m.len*f0;
+        const y0 = y - Math.sin(m.angle)*m.len*f0;
+        const x1 = x - Math.cos(m.angle)*m.len*f1;
+        const y1 = y - Math.sin(m.angle)*m.len*f1;
+        const w = Math.max(0.3, m.width*(1-f0*0.82));
+        const a = m.alpha*(1-f0*0.88);
+        ctx.strokeStyle = 'rgba(215,232,255,'+a.toFixed(3)+')';
+        ctx.lineWidth = w;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+      }
+      // 头部亮核
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.shadowColor = 'rgba(210,228,255,0.9)';
+      ctx.shadowBlur = 10;
+      ctx.beginPath(); ctx.arc(x, y, m.width*2.1, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    if(elapsed < DURATION || active > 0){
+      requestAnimationFrame(frame);
+    } else {
+      introDone(canvas);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function introDone(canvas){
+  canvas.style.transition = 'opacity 1.1s ease';
+  canvas.style.opacity = '0';
+  document.body.classList.add('ready');
+  setTimeout(()=>{ canvas.style.display = 'none'; }, 1200);
 }
 
 openBtn.addEventListener('click', startOpen);
